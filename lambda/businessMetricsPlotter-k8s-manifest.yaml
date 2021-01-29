@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: batch-jobs
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: businessmetricsplotter-${JOBNAME}-${NAMESPACE}-${METRICNAME}
+  namespace: batch-jobs
+  labels:
+    environment: analytics
+    businessunit: analytics
+    service: businessmetricsplotter
+    email: ${EMAIL}
+    type: batch-job
+    namespace: ${NAMESPACE}
+    metricname: ${METRICNAME}
+    databasename: ${DATABASENAME}
+spec:
+  startingDeadlineSeconds: 15
+  activeDeadlineSeconds: 30
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 10
+  ttlSecondsAfterFinished: 3600
+  schedule: ${SCHEDULE}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: businessmetricsplotter
+            image: 253605109225.dkr.ecr.ap-south-1.amazonaws.com/businessmetricsplotter:v1.0.0
+            env:
+                - name: DATABASENAME
+                  value: ${DATABASENAME}
+                - name: QUERY
+                  value: ${"QUERY"}
+                - name: NAMESPACE
+                  value: ${NAMESPACE}
+                - name: METRICNAME
+                  value: ${METRICNAME}
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "250m"
+              limits:
+                memory: "256Mi"
+                cpu: "500m"
+          restartPolicy: Never
+          concurrencyPolicy: Forbid

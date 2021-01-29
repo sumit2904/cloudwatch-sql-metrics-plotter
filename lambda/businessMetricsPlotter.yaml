@@ -1,0 +1,87 @@
+Description: Cloudformation to create cloudwatch event and task definition that executes business metrics plotter  
+
+Parameters:
+  Rate:
+    Type: String
+    Default: rate(1 hour)
+    AllowedValues:
+      - rate(5 minutes)
+      - rate(10 minutes)
+      - rate(15 minutes)
+      - rate(30 minutes)
+      - rate(45 minutes)
+      - rate(1 hour)
+      - rate(2 hours)
+      - rate(6 hours)
+      - rate(6 hours)
+      - rate(12 hours)
+      - rate(1 day)
+      - rate(2 days)
+      - rate(7 days)
+      - rate(15 days)
+      - rate(30 days)
+    Description: Rate of execution of the query. This is how often the data will be plotted.
+  QUERY:
+    Type: String
+    Description: The query to execute.
+  DATABASENAME:
+    Type: String
+    Description: The database name where the query has to be executed.
+  NAMESPACE:
+    Type: String
+    Description: The namespace in cloudwatch where the metric is plotted.
+  METRICNAME:
+    Type: String
+    Description: The name of the column to use the value to plot. Any other columns are used as dimension where the dimension name is the column name and value is the dimension value.
+  EMAIL:
+    Type: String
+    Description: The email to notify in case of failures to execute.
+
+Resources:
+  PlotterEvent:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Events Rule with EcsParameters
+      ScheduleExpression: !Ref Rate
+      Targets:
+        - Arn: !GetAtt 
+            - MyCluster
+            - Arn
+          RoleArn: !GetAtt 
+            - ECSTaskRole
+            - Arn
+          Id: Id345
+          EcsParameters:
+            Group: String
+            LaunchType: String
+            NetworkConfiguration: 
+              NetworkConfiguration
+            PlatformVersion: String
+            TaskCount: 1
+            TaskDefinitionArn: !Ref PlotterTaskDefinition
+  PlotterTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties: 
+      RequiresCompatibilities:
+        - "FARGATE"
+      ContainerDefinitions: 
+        - 
+          Name: "BusinessMetricsPlotter"
+          Image: "amazon/amazon-ecs-sample"
+          Environment: 
+            -  Name: DATABASENAME
+               Value: !REF DATABASENAME
+            -  Name: QUERY
+               Value: !REF QUERY
+            -  Name: NAMESPACE
+               Value: !REF NAMESPACE
+            -  Name: METRICNAME
+               Value: !REF METRICNAME
+          Cpu: 256
+          Memory: 256
+          Essential: true
+Outputs:
+    Event:
+        Value: !Ref PlotterEvent
+    TaskDefinition:
+        Value: !Ref PlotterTaskDefinition
